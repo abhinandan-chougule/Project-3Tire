@@ -24,13 +24,14 @@ module "s3_artifacts" {
 }
 
 module "alb" {
-  source              = "./modules/alb"
-  project_name        = var.project_name
-  vpc_id              = module.vpc.vpc_id
-  public_subnet_ids   = module.vpc.public_subnet_ids
-  alb_certificate_arn = module.route53.acm_certificate_arn
-  target_port         = 8080
-  tags                = local.tags
+  source                 = "./modules/alb"
+  project_name           = var.project_name
+  vpc_id                 = module.vpc.vpc_id
+  public_subnet_ids      = module.vpc.public_subnet_ids
+  alb_certificate_arn    = module.route53.acm_certificate_arn
+  alb_security_group_id  = module.vpc.alb_sg_id
+  target_port            = 8080
+  tags                   = local.tags
 }
 
 module "app_asg" {

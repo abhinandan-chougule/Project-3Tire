@@ -14,7 +14,7 @@ variable "db_engine" {
 variable "db_engine_version" {
   description = "Version of the database engine"
   type        = string
-  default     = "15.4"
+  default     = "13"
 }
 
 # Instance configuration
