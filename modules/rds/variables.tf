@@ -1,3 +1,9 @@
+variable "project_name" {
+  description = "Project names for the database"
+  type        = string
+  default     = "petclinic-project"
+}
+
 # Database engine and version
 variable "db_engine" {
   description = "Database engine (postgres, mysql, etc.)"
@@ -64,4 +70,12 @@ variable "private_db_subnet_ids" {
 variable "vpc_id" {
   description = "VPC ID where RDS will be deployed"
   type        = string
+}
+
+variable "tags" {
+  description = "rds Tags to apply to resources"
+  type        = map(string)
+  default     = {
+    Name = "rds"
+  }
 }

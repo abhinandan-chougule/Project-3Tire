@@ -65,7 +65,6 @@ module "bastion" {
 
 module "rds" {
   source                = "./modules/rds"
-  project_name          = var.project_name
   vpc_id                = module.vpc.vpc_id
   private_db_subnet_ids = module.vpc.private_db_subnet_ids
   db_engine             = var.db_engine
@@ -74,8 +73,6 @@ module "rds" {
   db_name               = var.db_name
   db_username           = var.db_username
   db_password           = var.db_password
-  app_security_group_id = module.vpc.app_sg_id
-  tags                  = local.tags
 }
 
 module "route53" {

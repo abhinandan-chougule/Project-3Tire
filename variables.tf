@@ -45,6 +45,18 @@ variable "private_db_subnet_cidrs" {
   description = "List of private db subnet CIDRs"
 }
 
+variable "db_subnet_ids" {
+  type        = list(string)
+  description = "List of subnet IDs for DB subnet group (use actual subnet IDs)"
+  default     = []
+}
+
+variable "vpc_id" {
+  type        = string
+  description = "VPC ID where resources will be deployed"
+  default     = null
+}
+
 variable "admin_cidr" {
   type        = string
   description = "Trusted CIDR for bastion SSH access (e.g., your office IP)"
