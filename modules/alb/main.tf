@@ -2,7 +2,7 @@ resource "aws_lb" "this" {
   name               = "${var.project_name}-alb"
   load_balancer_type = "application"
   security_groups    = [] # Attach via SGs at VPC module; ALB uses them implicitly via listeners/target groups
-  subnets            = var.public_subnet_ids
+  subnets            = distinct(var.public_subnet_ids) # Ensure only one subnet per AZ
   idle_timeout       = 60
   tags               = merge(var.tags, { Name = "${var.project_name}-alb" })
 }

@@ -4,12 +4,26 @@ resource "aws_db_subnet_group" "this" {
   tags       = merge(var.tags, { Name = "${var.project_name}-db-subnets" })
 }
 
-data "aws_security_group" "db" {
-  filter {
-    name   = "group-name"
-    values = ["${var.project_name}-db-sg"]
+resource "aws_security_group" "db" {
+  name_prefix = "${var.project_name}-db-sg"
+  description = "Database security group for ${var.project_name}"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = var.db_port
+    to_port     = var.db_port
+    protocol    = "tcp"
+    cidr_blocks = var.allowed_cidr_blocks
   }
-  vpc_id = var.vpc_id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, { Name = "${var.project_name}-db-sg" })
 }
 
 resource "aws_db_instance" "this" {
@@ -24,7 +38,7 @@ resource "aws_db_instance" "this" {
   storage_type            = "gp3"
   multi_az                = false
   publicly_accessible     = false
-  vpc_security_group_ids  = [data.aws_security_group.db.id]
+  vpc_security_group_ids  = [aws_security_group.db.id]
   db_subnet_group_name    = aws_db_subnet_group.this.name
   backup_retention_period = 7
   deletion_protection     = false
@@ -37,5 +51,5 @@ output "db_endpoint" {
 }
 
 output "db_security_group_id" {
-  value = data.aws_security_group.db.id
+  value = aws_security_group.db.id
 }
