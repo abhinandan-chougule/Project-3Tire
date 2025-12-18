@@ -78,6 +78,12 @@ variable "app_security_group_id" {
   default     = null
 }
 
+variable "admin_cidr" {
+  description = "Admin CIDR for temporary DB access during setup"
+  type        = string
+  default     = null
+}
+
 variable "tags" {
   description = "rds Tags to apply to resources"
   type        = map(string)

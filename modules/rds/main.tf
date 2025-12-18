@@ -19,10 +19,20 @@ resource "aws_security_group" "db" {
   dynamic "ingress" {
     for_each = var.app_security_group_id == null ? [] : [var.app_security_group_id]
     content {
-      from_port      = var.db_port
-      to_port        = var.db_port
-      protocol       = "tcp"
+      from_port       = var.db_port
+      to_port         = var.db_port
+      protocol        = "tcp"
       security_groups = [ingress.value]
+    }
+  }
+
+  dynamic "ingress" {
+    for_each = var.admin_cidr == null ? [] : [var.admin_cidr]
+    content {
+      from_port   = var.db_port
+      to_port     = var.db_port
+      protocol    = "tcp"
+      cidr_blocks = [ingress.value]
     }
   }
 

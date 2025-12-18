@@ -11,9 +11,9 @@ resource "aws_iam_role" "ssm_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
     Statement = [{
-      Action = "sts:AssumeRole",
+      Action    = "sts:AssumeRole",
       Principal = { Service = "ec2.amazonaws.com" },
-      Effect = "Allow"
+      Effect    = "Allow"
     }]
   })
 }
@@ -93,6 +93,7 @@ module "bastion" {
 
 module "rds" {
   source                = "./modules/rds"
+  project_name          = var.project_name
   vpc_id                = module.vpc.vpc_id
   private_db_subnet_ids = module.vpc.private_db_subnet_ids
   db_engine             = var.db_engine
@@ -101,7 +102,11 @@ module "rds" {
   db_name               = var.db_name
   db_username           = var.db_username
   db_password           = var.db_password
+  db_port               = var.db_port
+  allowed_cidr_blocks   = var.allowed_cidr_blocks
+  admin_cidr            = var.admin_cidr
   app_security_group_id = module.vpc.app_sg_id
+  tags                  = local.tags
 }
 
 module "route53" {
