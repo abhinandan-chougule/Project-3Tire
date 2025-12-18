@@ -1,3 +1,4 @@
+# ===== Get latest Amazon Linux 2 AMI =====
 data "aws_ami" "amazon_linux2" {
   most_recent = true
   owners      = ["amazon"]
@@ -8,6 +9,30 @@ data "aws_ami" "amazon_linux2" {
   }
 }
 
+# ===== Bastion Security Group =====
+resource "aws_security_group" "bastion" {
+  name_prefix = "${var.project_name}-bastion-sg-"
+  description = "Allow SSH from admin CIDR"
+  vpc_id      = var.vpc_id
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.admin_cidr]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, { Name = "${var.project_name}-bastion-sg" })
+}
+
+# ===== Bastion EC2 Instance =====
 resource "aws_instance" "bastion" {
   ami                         = data.aws_ami.amazon_linux2.id
   instance_type               = "t3.micro"
@@ -15,19 +40,13 @@ resource "aws_instance" "bastion" {
   associate_public_ip_address = true
   key_name                    = var.ec2_key_name
 
-  vpc_security_group_ids = [data.aws_security_group.bastion.id]
+  vpc_security_group_ids = [aws_security_group.bastion.id]
 
   tags = merge(var.tags, { Name = "${var.project_name}-bastion" })
 }
 
-data "aws_security_group" "bastion" {
-  filter {
-    name   = "group-name"
-    values = ["${var.project_name}-bastion-sg"]
-  }
-  vpc_id = var.vpc_id
-}
-
+# ===== Output public IP =====
 output "public_ip" {
-  value = aws_instance.bastion.public_ip
+  description = "Public IP of the bastion host"
+  value       = aws_instance.bastion.public_ip
 }

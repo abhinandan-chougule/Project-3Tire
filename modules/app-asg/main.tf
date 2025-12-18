@@ -15,6 +15,7 @@ data "aws_iam_policy_document" "ec2_assume" {
   }
 }
 
+# Policy for S3 access
 resource "aws_iam_role_policy" "s3_access" {
   name = "${var.project_name}-s3-access"
   role = aws_iam_role.app_role.id
@@ -27,11 +28,17 @@ resource "aws_iam_role_policy" "s3_access" {
         Action   = ["s3:GetObject", "s3:ListBucket"],
         Resource = [
           "arn:aws:s3:::${var.artifact_bucket_name}",
-          "arn:aws:s3:::${var.artifact_bucket_name}/${var.artifact_object_key}"
+          "arn:aws:s3:::${var.artifact_bucket_name}/*"
         ]
       }
     ]
   })
+}
+
+# Attach SSM core policy as well (so you can connect via Session Manager)
+resource "aws_iam_role_policy_attachment" "ssm_attach" {
+  role       = aws_iam_role.app_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
 resource "aws_iam_instance_profile" "app_profile" {
@@ -53,35 +60,50 @@ resource "aws_launch_template" "app" {
   }
 
   user_data = base64encode(<<-EOT
-    #!/bin/bash
-    set -euo pipefail
+#!/bin/bash
+set -eux
 
-    yum update -y
-    yum install -y java-17-amazon-corretto-headless awscli
+# ===== Update system and install dependencies =====
+sudo yum update -y
+sudo yum install -y java-11-amazon-corretto git unzip
 
-    mkdir -p /opt/app
-    aws s3 cp s3://${var.artifact_bucket_name}/${var.artifact_object_key} /opt/app/app.jar
+# ===== Install AWS CLI v2 =====
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version
 
-    # Systemd unit
-    cat >/etc/systemd/system/app.service <<'UNIT'
-    [Unit]
-    Description=Spring Boot App
-    After=network.target
+# ===== Fetch the Spring Boot JAR from S3 =====
+aws s3 cp "s3://${var.artifact_bucket_name}/${var.artifact_object_key}" /home/ec2-user/app.jar
+sudo chown ec2-user:ec2-user /home/ec2-user/app.jar
 
-    [Service]
-    User=root
-    ExecStart=/usr/bin/java -jar /opt/app/app.jar --server.port=8080
-    Restart=always
+# ===== Create a systemd service =====
+sudo bash -c 'cat > /etc/systemd/system/petclinic.service <<EOF
+[Unit]
+Description=PetClinic Spring Boot App
+After=network.target
 
-    [Install]
-    WantedBy=multi-user.target
-    UNIT
+[Service]
+User=ec2-user
+WorkingDirectory=/home/ec2-user
+Environment=SPRING_PROFILES_ACTIVE=mysql
+Environment=SPRING_DATASOURCE_URL=jdbc:mysql://${var.db_host}:${var.db_port}/${var.db_name}?useSSL=false&allowPublicKeyRetrieval=true
+Environment=SPRING_DATASOURCE_USERNAME=${var.db_username}
+Environment=SPRING_DATASOURCE_PASSWORD=${var.db_password}
+ExecStart=/usr/bin/java -jar /home/ec2-user/app.jar
+SuccessExitStatus=143
+Restart=on-failure
+RestartSec=10
 
-    systemctl daemon-reload
-    systemctl enable app
-    systemctl start app
-  EOT
-)
+[Install]
+WantedBy=multi-user.target
+EOF'
+
+sudo systemctl daemon-reload
+sudo systemctl enable petclinic
+sudo systemctl start petclinic
+EOT
+  )
 
   tag_specifications {
     resource_type = "instance"
@@ -89,6 +111,7 @@ resource "aws_launch_template" "app" {
   }
 }
 
+# Auto Scaling Group
 resource "aws_autoscaling_group" "app" {
   name                      = "${var.project_name}-asg"
   desired_capacity          = var.desired_capacity

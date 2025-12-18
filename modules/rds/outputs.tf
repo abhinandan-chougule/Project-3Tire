@@ -34,3 +34,8 @@ output "db_security_group_id" {
   description = "The security group ID for the RDS instance"
   value       = aws_security_group.db.id
 }
+
+output "db_host" {
+  description = "The hostname of the RDS instance (without port)"
+  value       = split(":", aws_db_instance.this.endpoint)[0]
+}

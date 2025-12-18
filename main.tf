@@ -5,6 +5,28 @@ locals {
     Managed = "terraform"
   }
 }
+#IAM Role and Instance Profile for SSM
+resource "aws_iam_role" "ssm_role" {
+  name = "${var.project_name}-ec2-ssm-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Action = "sts:AssumeRole",
+      Principal = { Service = "ec2.amazonaws.com" },
+      Effect = "Allow"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ssm_attach" {
+  role       = aws_iam_role.ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "ssm_profile" {
+  name = "${var.project_name}-ec2-ssm-profile"
+  role = aws_iam_role.ssm_role.name
+}
 
 module "vpc" {
   source                   = "./modules/vpc"
@@ -24,14 +46,14 @@ module "s3_artifacts" {
 }
 
 module "alb" {
-  source                 = "./modules/alb"
-  project_name           = var.project_name
-  vpc_id                 = module.vpc.vpc_id
-  public_subnet_ids      = module.vpc.public_subnet_ids
-  alb_certificate_arn    = module.route53.acm_certificate_arn
-  alb_security_group_id  = module.vpc.alb_sg_id
-  target_port            = 8080
-  tags                   = local.tags
+  source                = "./modules/alb"
+  project_name          = var.project_name
+  vpc_id                = module.vpc.vpc_id
+  public_subnet_ids     = module.vpc.public_subnet_ids
+  alb_certificate_arn   = module.route53.acm_certificate_arn
+  alb_security_group_id = module.vpc.alb_sg_id
+  target_port           = 8080
+  tags                  = local.tags
 }
 
 module "app_asg" {
@@ -51,6 +73,11 @@ module "app_asg" {
   desired_capacity      = var.asg_desired
   min_size              = var.asg_min
   max_size              = var.asg_max
+  db_host               = module.rds.db_host
+  db_port               = var.db_port
+  db_name               = var.db_name
+  db_username           = var.db_username
+  db_password           = var.db_password
   tags                  = local.tags
 }
 
@@ -74,6 +101,7 @@ module "rds" {
   db_name               = var.db_name
   db_username           = var.db_username
   db_password           = var.db_password
+  app_security_group_id = module.vpc.app_sg_id
 }
 
 module "route53" {

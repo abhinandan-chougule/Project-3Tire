@@ -99,12 +99,12 @@ variable "app_ami_id" {
 
 variable "asg_desired" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "asg_min" {
   type    = number
-  default = 2
+  default = 1
 }
 
 variable "asg_max" {
@@ -114,12 +114,12 @@ variable "asg_max" {
 
 variable "db_engine" {
   type    = string
-  default = "postgres"
+  default = "MySQL"
 }
 
 variable "db_engine_version" {
   type    = string
-  default = "13"
+  default = "8.0.43"
 }
 
 variable "db_instance_class" {

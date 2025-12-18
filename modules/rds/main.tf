@@ -16,6 +16,16 @@ resource "aws_security_group" "db" {
     cidr_blocks = var.allowed_cidr_blocks
   }
 
+  dynamic "ingress" {
+    for_each = var.app_security_group_id == null ? [] : [var.app_security_group_id]
+    content {
+      from_port      = var.db_port
+      to_port        = var.db_port
+      protocol       = "tcp"
+      security_groups = [ingress.value]
+    }
+  }
+
   egress {
     from_port   = 0
     to_port     = 0

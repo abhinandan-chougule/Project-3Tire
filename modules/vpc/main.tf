@@ -172,25 +172,3 @@ resource "aws_security_group" "db" {
   tags = merge(var.tags, { Name = "${var.project_name}-db-sg" })
 }
 
-resource "aws_security_group" "bastion" {
-  name        = "${var.project_name}-bastion-sg"
-  description = "Bastion SG"
-  vpc_id      = aws_vpc.this.id
-
-  ingress {
-    description = "SSH from admin CIDR"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.admin_cidr]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = merge(var.tags, { Name = "${var.project_name}-bastion-sg" })
-}

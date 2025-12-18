@@ -8,13 +8,13 @@ variable "project_name" {
 variable "db_engine" {
   description = "Database engine (postgres, mysql, etc.)"
   type        = string
-  default     = "postgres"
+  default     = "mysql"
 }
 
 variable "db_engine_version" {
   description = "Version of the database engine"
   type        = string
-  default     = "13"
+  default     = "8.0.43"
 }
 
 # Instance configuration
@@ -53,7 +53,7 @@ variable "db_password" {
 variable "db_port" {
   description = "Port number for the database"
   type        = number
-  default     = 5432
+  default     = 3306
 }
 
 variable "allowed_cidr_blocks" {
@@ -70,6 +70,12 @@ variable "private_db_subnet_ids" {
 variable "vpc_id" {
   description = "VPC ID where RDS will be deployed"
   type        = string
+}
+
+variable "app_security_group_id" {
+  description = "Security group ID of application instances allowed to access the DB"
+  type        = string
+  default     = null
 }
 
 variable "tags" {
