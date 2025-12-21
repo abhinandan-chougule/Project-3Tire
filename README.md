@@ -16,6 +16,10 @@
 
 ## Setup
 - **Prereqs:**
+  - Create dedicated user for provider.tf (terraform.admin) role 
+  - Rename 'prod.tfvars.template' with required details
+  - Clone application java application repo "git@github.com:abhinandan-chougule/java-spring-petclinic-source-code.git" locally
+  - Build the application as per steps in repo readme and upload to s3 once s3 is ready use
   - AWS CLI configured (`aws configure`)
   - Terraform >= 1.5
   - Make (optional, for scripted commands)
