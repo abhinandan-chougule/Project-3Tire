@@ -27,7 +27,28 @@ resource "aws_lb_target_group" "app" {
   tags = merge(var.tags, { Name = "${var.project_name}-tg" })
 }
 
-resource "aws_lb_listener" "http" {
+# HTTP listener (always created)
+# Redirects to HTTPS if enabled, otherwise forwards to target group
+# HTTP listener (redirect if HTTPS enabled, otherwise forward)
+resource "aws_lb_listener" "http_redirect" {
+  count             = var.enable_https ? 1 : 0
+  load_balancer_arn = aws_lb.this.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
+resource "aws_lb_listener" "http_forward" {
+  count             = var.enable_https ? 0 : 1
   load_balancer_arn = aws_lb.this.arn
   port              = 80
   protocol          = "HTTP"
@@ -38,7 +59,24 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-output "target_group_arn" { value = aws_lb_target_group.app.arn }
-output "alb_dns_name"     { value = aws_lb.this.dns_name }
-output "alb_name"        { value = aws_lb.this.name }
-output "tg_name"         { value = aws_lb_target_group.app.name }
+
+# Note: ACM certificate and validation are handled by the `route53` module
+# to avoid circular dependencies. The ALB module will use a provided
+# `alb_certificate_arn` when `enable_https` is true.
+
+
+# HTTPS listener (only created if enable_https = true)
+resource "aws_lb_listener" "https" {
+  count             = var.enable_https ? 1 : 0
+  load_balancer_arn = aws_lb.this.arn
+  port              = 443
+  protocol          = "HTTPS"
+
+  ssl_policy      = "ELBSecurityPolicy-2016-08"
+  certificate_arn = var.alb_certificate_arn
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.app.arn
+  }
+}

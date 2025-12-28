@@ -28,23 +28,6 @@ resource "aws_acm_certificate_validation" "alb_cert_validation" {
   validation_record_fqdns = [for r in aws_route53_record.cert_validation : r.fqdn]
 }
 
-# ALB alias record
-resource "aws_route53_record" "app_alias" {
-  zone_id = var.hosted_zone_id
-  name    = "${var.subdomain}.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = var.alb_dns_name
-    zone_id                = data.aws_lb_hosted_zone_id.alb.id
-    evaluate_target_health = true
-  }
-}
-
-data "aws_lb_hosted_zone_id" "alb" {
-  load_balancer_type = "application"
-}
-
 output "acm_certificate_arn" {
   value = aws_acm_certificate_validation.alb_cert_validation.certificate_arn
 }

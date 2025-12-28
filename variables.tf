@@ -164,3 +164,8 @@ variable "allowed_cidr_blocks" {
   type        = list(string)
   default     = ["10.10.0.0/16"] # or your app subnet CIDRs
 }
+
+variable "enable_https" {
+  type    = bool
+  default = false
+}

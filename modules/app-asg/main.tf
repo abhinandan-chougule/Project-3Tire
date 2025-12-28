@@ -66,7 +66,7 @@ set -eux
 # ===== Update system and install dependencies =====
 apt update -y
 apt upgrade -y
-apt install -y openjdk-17-jdk-headless curl unzip
+apt install -y openjdk-17-jdk-headless curl unzip jq
 
 # ===== Install AWS CLI v2 =====
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.30.6.zip" -o "/tmp/awscliv2.zip"
@@ -78,6 +78,19 @@ aws --version
 # ===== Fetch the Spring Boot JAR from S3 =====
 aws s3 cp "s3://${var.artifact_bucket_name}/${var.artifact_object_key}" /home/ubuntu/app.jar
 chown ubuntu:ubuntu /home/ubuntu/app.jar
+
+# ===== Fetch secrets from AWS Secrets Manager =====
+DB_PASS=$(aws secretsmanager get-secret-value --secret-id ${var.project_name}-db-password \
+           --query SecretString --output text)
+
+SNS_EMAIL=$(aws secretsmanager get-secret-value --secret-id ${var.project_name}-sns-email \
+             --query SecretString --output text)
+
+DOMAIN_NAME=$(aws secretsmanager get-secret-value --secret-id ${var.project_name}-domain-name \
+               --query SecretString --output text)
+
+ALB_CERT_DOMAIN=$(aws secretsmanager get-secret-value --secret-id ${var.project_name}-alb-cert-domain \
+                   --query SecretString --output text)
 
 # ===== Create a systemd service =====
 cat > /etc/systemd/system/petclinic.service <<EOF
@@ -91,7 +104,10 @@ WorkingDirectory=/home/ubuntu
 Environment=SPRING_PROFILES_ACTIVE=mysql
 Environment=SPRING_DATASOURCE_URL=jdbc:mysql://${var.db_host}:${var.db_port}/${var.db_name}?useSSL=false&allowPublicKeyRetrieval=true
 Environment=SPRING_DATASOURCE_USERNAME=${var.db_username}
-Environment=SPRING_DATASOURCE_PASSWORD=${var.db_password}
+Environment=SPRING_DATASOURCE_PASSWORD=$DB_PASS
+Environment=ALERT_EMAIL=$SNS_EMAIL
+Environment=DOMAIN_NAME=$DOMAIN_NAME
+Environment=ALB_CERT_DOMAIN=$ALB_CERT_DOMAIN
 ExecStart=/usr/bin/java -jar /home/ubuntu/app.jar
 SuccessExitStatus=143
 Restart=on-failure
@@ -123,7 +139,7 @@ resource "aws_autoscaling_group" "app" {
   health_check_type         = "ELB"
   health_check_grace_period = 60
 
-  target_group_arns = [var.target_group_arn]
+  target_group_arns = var.target_group_arn == null ? [] : [var.target_group_arn]
 
   launch_template {
     id      = aws_launch_template.app.id

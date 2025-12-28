@@ -1,0 +1,151 @@
+###################################################################################################
+Choose Any one option to configure AWS and VSCode
+## - **Follow the step by step commands given below
+## - ** Refer VIDEO TUTORIAL available on YouTube https://youtu.be/ndWXMcGtNVU?si=-Rcej6yiG16WDErL
+###################################################################################################
+
+🛠️ Step 1: How to create IAM Role for Terraform
+
+Get your AWS Access Key ID & Secret Access Key
+1.	Sign in to AWS Management Console 
+             Log in with your root account or an IAM user that has admin privileges.
+2.	Create a user
+	If not, create a new IAM user (recommended) with programmatic access.
+3.	Attach permissions
+	For testing, you can attach AdministratorAccess.
+4.	Create access keys
+	Under Security credentials, click Create access key.
+5.	AWS will generate: 
+	Access Key ID (looks like AKIAxxxxxxxxxxxx)
+	Secret Access Key (long alphanumeric string)
+
+⚠️ Important: You’ll only see the Secret Access Key once. Download the .csv file or copy it securely.
+
+I used Visual Studio Code for below commands
+------------------------------------------------------------------------------------------------------------
+Step 2 (Option1): How to create Profile on Windows OS
+
+{ ### Windows installation and profile configuration
+- **Install AWS CLI (Windows MSI):**
+  1. Download the latest AWS CLI v2 MSI from the AWS website.
+  2. Run the installer and complete the setup.
+  3. Close and reopen your terminal (Command Prompt or PowerShell).
+
+- **Verify installation:**
+ aws --version
+
+- **Create the profile:**
+
+ aws configure --profile terraform-admin
+
+  - Enter Access Key, Secret Key, default region (e.g., ap-southeast-1), and output (json).
+
+- **Use the profile temporarily (PowerShell):**
+ $env:AWS_PROFILE = "terraform-admin"
+ aws sts get-caller-identity
+ 
+- **Use the profile temporarily (Command Prompt):**
+  set AWS_PROFILE=terraform-admin
+  aws sts get-caller-identity
+ 
+- **Make the profile persistent (PowerShell):**
+  - Add this line to your PowerShell profile (e.g., $PROFILE):
+    $env:AWS_PROFILE = "terraform-admin"
+
+  - Or set a system/user environment variable via Windows Settings → System → About → Advanced system settings → Environment Variables.
+}
+------------------------------------------------------------------------------------------------------------
+Step 2 (Option2): How to create Profile on MacOS
+
+### macOS installation and profile configuration
+
+- **Install AWS CLI (Homebrew):**
+ 
+  brew update
+  brew install awscli
+  - Alternatively, use the official PKG installer and follow the prompts.
+
+- **Verify installation:**
+  aws --version
+
+- **Create the profile:**
+  aws configure --profile terraform-admin
+  - Enter Access Key, Secret Key, default region (e.g., ap-southeast-1), and output (json).
+
+- **Use the profile temporarily (Bash/Zsh):**
+  export AWS_PROFILE=terraform-admin
+  aws sts get-caller-identity
+
+- **Make the profile persistent:**
+  - Add to your shell config:
+    - Zsh: `echo 'export AWS_PROFILE=terraform-admin' >> ~/.zshrc && source ~/.zshrc`
+    - Bash: `echo 'export AWS_PROFILE=terraform-admin' >> ~/.bashrc && source ~/.bashrc`
+
+------------------------------------------------------------------------------------------------------------
+Step 3: Validation
+### Files and validation
+- **Where credentials are stored:**
+  - macOS/Linux: `~/.aws/credentials` and `~/.aws/config`
+  - Windows: `%UserProfile%\.aws\credentials` and `%UserProfile%\.aws\config`
+
+- **Validate the active identity:**
+  aws sts get-caller-identity
+
+- **Switch profiles quickly (macOS/Linux):**
+  export AWS_PROFILE=terraform-admin
+
+------------------------------------------------------------------------------------------------------------
+### Optional tips
+
+- **Set region per profile:**
+  Add to `~/.aws/config`:
+  ```ini
+  [profile terraform-admin]
+  region = ap-southeast-1
+  output = json
+  
+- **Use Git Bash on Windows:**
+  - You can use the Unix-style export:
+    export AWS_PROFILE=terraform-admin
+    aws sts get-caller-identity
+------------------------------------------------------------------------------------------------------------
+- **Troubleshooting:**
+  - If `aws` isn’t found, reopen your terminal or check PATH.
+  - If identity is wrong, ensure the correct profile is set and credentials aren’t overridden by environment variables.
+
+############################################################################################################
+# Export AWS Credentials
+
+export AWS_PROFILE=terraform-admin
+
+# Verify acccount
+aws sts get-caller-identity --profile terraform-admin
+
+# Terraform, plan, apply and Destroy infra
+terraform plan -var-file=prod.tfvars
+terraform apply -var-file=prod.tfvars -auto-approve
+terraform destroy -var-file=prod.tfvars
+
+# Clone application repo
+git clone https://github.com/abhinandan-chougule/aws-3tier-infra-build.git
+
+git clone https://github.com/abhinandan-chougule/spring-boot-petclinic-code.git
+
+# Copy to S3 (Copy two .jar and paste into one single .jar on S3 bucket)
+aws s3 cp target/spring-petclinic-*.jar s3://mypro-artifacts-prod/spring-petclinic.jar
+
+# Connect RDS from Bastion Host
+mysql -h <rds-endpoint> -u <db-username> -p
+
+Ex. mysql -h petclinic-prod-db.cj6wac0qyd0w.ap-southeast-1.rds.amazonaws.com -u appuser -p
+(Password: myRDSpassword123!)
+
+# In mysql shell:
+CREATE DATABASE petclinic;
+GRANT ALL PRIVILEGES ON petclinic.* TO 'appuser'@'%';
+FLUSH PRIVILEGES;
+
+SHOW DATABASES;
+USE petclinic;
+SHOW TABLES;
+SELECT * FROM owners LIMIT 50;

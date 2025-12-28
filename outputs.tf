@@ -1,11 +1,11 @@
 output "alb_dns_name" {
-  value       = module.alb.alb_dns_name
+  value       = try(module.application_alb.alb_dns_name, null)
   description = "ALB DNS name"
 }
 
 output "app_url" {
-  value       = "https://${var.subdomain}.${var.domain_name}"
-  description = "Public URL for the application"
+  value       = format("%s://%s.%s", var.enable_https ? "https" : "http", var.subdomain, var.domain_name)
+  description = "Public URL for the application (protocol follows enable_https)"
 }
 
 output "bastion_public_ip" {

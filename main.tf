@@ -39,22 +39,24 @@ module "vpc" {
   tags                     = local.tags
 }
 
+module "application_alb" {
+  source                = "./modules/alb"
+  project_name          = var.project_name
+  alb_certificate_arn   = module.route53.acm_certificate_arn
+  vpc_id                = module.vpc.vpc_id
+  public_subnet_ids     = module.vpc.public_subnet_ids
+  alb_security_group_id = module.vpc.alb_sg_id
+  target_port           = 8080
+  tags                  = local.tags
+}
+
 module "s3_artifacts" {
   source      = "./modules/s3-artifacts"
   bucket_name = var.artifact_bucket_name
   tags        = local.tags
 }
 
-module "alb" {
-  source                = "./modules/alb"
-  project_name          = var.project_name
-  vpc_id                = module.vpc.vpc_id
-  public_subnet_ids     = module.vpc.public_subnet_ids
-  alb_certificate_arn   = module.route53.acm_certificate_arn
-  alb_security_group_id = module.vpc.alb_sg_id
-  target_port           = 8080
-  tags                  = local.tags
-}
+
 
 module "app_asg" {
   source                = "./modules/app-asg"
@@ -64,7 +66,7 @@ module "app_asg" {
   app_ami_id            = var.app_ami_id
   instance_type         = var.app_instance_type
   ec2_key_name          = var.ec2_key_name
-  target_group_arn      = module.alb.target_group_arn
+  target_group_arn      = try(module.application_alb.target_group_arn, null)
   artifact_bucket_name  = module.s3_artifacts.bucket_name
   artifact_object_key   = var.artifact_object_key
   db_security_group_id  = module.rds.db_security_group_id
@@ -114,18 +116,35 @@ module "route53" {
   hosted_zone_id     = var.hosted_zone_id
   domain_name        = var.domain_name
   subdomain          = var.subdomain
-  alb_dns_name       = module.alb.alb_dns_name
+  alb_dns_name       = null
   vpc_id             = module.vpc.vpc_id
   certificate_domain = var.alb_certificate_domain
   tags               = local.tags
 }
 
+data "aws_lb_hosted_zone_id" "alb" {
+  load_balancer_type = "application"
+}
+
+resource "aws_route53_record" "app_alias" {
+  count   = var.enable_https ? 1 : 0
+  zone_id = var.hosted_zone_id
+  name    = "${var.subdomain}.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = module.application_alb.alb_dns_name
+    zone_id                = data.aws_lb_hosted_zone_id.alb.id
+    evaluate_target_health = true
+  }
+}
+
 module "monitoring" {
   source           = "./modules/monitoring"
   project_name     = var.project_name
-  alb_name         = module.alb.alb_name
-  tg_name          = module.alb.tg_name
+  alb_name         = try(module.application_alb.alb_name, null)
+  tg_name          = try(module.application_alb.tg_name, null)
   sns_alert_email  = var.sns_alert_email
-  target_group_arn = module.alb.target_group_arn
+  target_group_arn = try(module.application_alb.target_group_arn, null)
   tags             = local.tags
 }
