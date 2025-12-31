@@ -17,7 +17,7 @@ variable "domain_name" {
 variable "subdomain" {
   type        = string
   description = "App subdomain to point to ALB (e.g., api)"
-  default     = "api"
+  default     = "prod"
 }
 
 variable "hosted_zone_id" {
@@ -82,11 +82,6 @@ variable "artifact_object_key" {
   description = "Path to application JAR (e.g., releases/app.jar)"
 }
 
-variable "ec2_key_name" {
-  type        = string
-  description = "EC2 key pair name for bastion and app instances"
-}
-
 variable "app_instance_type" {
   type    = string
   default = "t3.micro"
@@ -129,7 +124,7 @@ variable "db_instance_class" {
 
 variable "db_name" {
   type    = string
-  default = "appdb"
+  default = "petclinic"
 }
 
 variable "db_username" {
@@ -168,4 +163,10 @@ variable "allowed_cidr_blocks" {
 variable "enable_https" {
   type    = bool
   default = false
+}
+
+# AWS CLI version to install on instances via user-data. Override if needed.
+variable "aws_cli_version" {
+  type    = string
+  default = "2.30.6"
 }

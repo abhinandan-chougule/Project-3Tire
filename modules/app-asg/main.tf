@@ -7,7 +7,7 @@ resource "aws_iam_role" "app_role" {
 data "aws_iam_policy_document" "ec2_assume" {
   statement {
     actions = ["sts:AssumeRole"]
-    effect   = "Allow"
+    effect  = "Allow"
     principals {
       type        = "Service"
       identifiers = ["ec2.amazonaws.com"]
@@ -24,8 +24,8 @@ resource "aws_iam_role_policy" "s3_access" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect   = "Allow",
-        Action   = ["s3:GetObject", "s3:ListBucket"],
+        Effect = "Allow",
+        Action = ["s3:GetObject", "s3:ListBucket"],
         Resource = [
           "arn:aws:s3:::${var.artifact_bucket_name}",
           "arn:aws:s3:::${var.artifact_bucket_name}/*"
@@ -51,7 +51,6 @@ resource "aws_launch_template" "app" {
   name_prefix   = "${var.project_name}-app-"
   image_id      = var.app_ami_id
   instance_type = var.instance_type
-  key_name      = var.ec2_key_name
 
   vpc_security_group_ids = [var.app_security_group_id]
 
@@ -59,38 +58,47 @@ resource "aws_launch_template" "app" {
     name = aws_iam_instance_profile.app_profile.name
   }
 
-user_data = base64encode(<<-EOT
+  user_data = base64encode(<<-EOT
 #!/bin/bash
 set -eux
 
 # ===== Update system and install dependencies =====
 apt update -y
 apt upgrade -y
-apt install -y openjdk-17-jdk-headless curl unzip jq
+apt install -y openjdk-17-jdk-headless curl unzip jq mysql-client
 
 # ===== Install AWS CLI v2 =====
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-2.30.6.zip" -o "/tmp/awscliv2.zip"
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${var.aws_cli_version}.zip" -o "/tmp/awscliv2.zip"
 cd /tmp
 unzip awscliv2.zip
 ./aws/install
 aws --version
 
-# ===== Fetch the Spring Boot JAR from S3 =====
-aws s3 cp "s3://${var.artifact_bucket_name}/${var.artifact_object_key}" /home/ubuntu/app.jar
-chown ubuntu:ubuntu /home/ubuntu/app.jar
+# Determine full path to the aws binary so cron can call it reliably
+AWS_BIN="$(command -v aws || echo /usr/local/bin/aws)"
 
-# ===== Fetch secrets from AWS Secrets Manager =====
-DB_PASS=$(aws secretsmanager get-secret-value --secret-id ${var.project_name}-db-password \
-           --query SecretString --output text)
+# ===== Bootstrap RDS schema =====
+mysql -h ${var.db_host} -P ${var.db_port} -u ${var.db_username} -p${var.db_password} <<'SQL'
+CREATE DATABASE IF NOT EXISTS petclinic;
+GRANT ALL PRIVILEGES ON petclinic.* TO 'appuser'@'%';
+FLUSH PRIVILEGES;
+SQL
 
-SNS_EMAIL=$(aws secretsmanager get-secret-value --secret-id ${var.project_name}-sns-email \
-             --query SecretString --output text)
+# ===== Download JAR only if missing =====
+# Download atomically to avoid partial files on failure
+if [ ! -f /home/ubuntu/app.jar ]; then
+  "$AWS_BIN" s3 cp "s3://${var.artifact_bucket_name}/${var.artifact_object_key}" /home/ubuntu/app.jar.part \
+    && mv /home/ubuntu/app.jar.part /home/ubuntu/app.jar \
+    && chown ubuntu:ubuntu /home/ubuntu/app.jar || true
+fi
 
-DOMAIN_NAME=$(aws secretsmanager get-secret-value --secret-id ${var.project_name}-domain-name \
-               --query SecretString --output text)
-
-ALB_CERT_DOMAIN=$(aws secretsmanager get-secret-value --secret-id ${var.project_name}-alb-cert-domain \
-                   --query SecretString --output text)
+# ===== Add cron job to retry if missing (uses full aws path and atomic move) =====
+# Include a PATH so cron can find system binaries reliably
+cat > /etc/cron.d/petclinic-jar-check <<EOF
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+*/2 * * * * root [ ! -f /home/ubuntu/app.jar ] && $AWS_BIN s3 cp "s3://${var.artifact_bucket_name}/${var.artifact_object_key}" /home/ubuntu/app.jar.part && mv /home/ubuntu/app.jar.part /home/ubuntu/app.jar && chown ubuntu:ubuntu /home/ubuntu/app.jar
+EOF
+chmod 644 /etc/cron.d/petclinic-jar-check
 
 # ===== Create a systemd service =====
 cat > /etc/systemd/system/petclinic.service <<EOF
@@ -104,10 +112,7 @@ WorkingDirectory=/home/ubuntu
 Environment=SPRING_PROFILES_ACTIVE=mysql
 Environment=SPRING_DATASOURCE_URL=jdbc:mysql://${var.db_host}:${var.db_port}/${var.db_name}?useSSL=false&allowPublicKeyRetrieval=true
 Environment=SPRING_DATASOURCE_USERNAME=${var.db_username}
-Environment=SPRING_DATASOURCE_PASSWORD=$DB_PASS
-Environment=ALERT_EMAIL=$SNS_EMAIL
-Environment=DOMAIN_NAME=$DOMAIN_NAME
-Environment=ALB_CERT_DOMAIN=$ALB_CERT_DOMAIN
+Environment=SPRING_DATASOURCE_PASSWORD=${var.db_password}
 ExecStart=/usr/bin/java -jar /home/ubuntu/app.jar
 SuccessExitStatus=143
 Restart=on-failure
@@ -121,7 +126,7 @@ systemctl daemon-reload
 systemctl enable petclinic
 systemctl start petclinic
 EOT
-)
+  )
 
   tag_specifications {
     resource_type = "instance"
@@ -142,8 +147,10 @@ resource "aws_autoscaling_group" "app" {
   target_group_arns = var.target_group_arn == null ? [] : [var.target_group_arn]
 
   launch_template {
-    id      = aws_launch_template.app.id
-    version = aws_launch_template.app.latest_version
+    id = aws_launch_template.app.id
+    # Use the special AWS value "$Latest" so the ASG will reference the
+    # most recent launch template version automatically when updated.
+    version = "$Latest"
   }
 
   instance_refresh {
@@ -151,6 +158,10 @@ resource "aws_autoscaling_group" "app" {
       min_healthy_percentage = 90
       instance_warmup        = 60
     }
+    # Trigger an instance refresh when the launch template latest version changes.
+    # No triggers specified. Instance refresh can be started manually or via
+    # an external mechanism when a new launch template version is published.
+
     strategy = "Rolling"
   }
 
@@ -159,4 +170,5 @@ resource "aws_autoscaling_group" "app" {
     value               = "${var.project_name}-app"
     propagate_at_launch = true
   }
+
 }

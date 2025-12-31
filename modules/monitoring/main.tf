@@ -22,11 +22,11 @@ resource "aws_cloudwatch_metric_alarm" "tg_unhealthy" {
   statistic           = "Average"
 
   dimensions = {
-    TargetGroup = var.tg_name
+    TargetGroup  = var.tg_name
     LoadBalancer = var.alb_name
   }
 
-  alarm_description = "Unhealthy hosts detected in target group"
+  alarm_description  = "Unhealthy hosts detected in target group"
   treat_missing_data = "missing"
 
   actions_enabled = true

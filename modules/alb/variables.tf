@@ -10,7 +10,7 @@ variable "target_port" { type = number }
 variable "alb_security_group_id" { type = string }
 variable "tags" { type = map(string) }
 variable "enable_https" {
-type    = bool
+  type    = bool
   default = false
 }
 

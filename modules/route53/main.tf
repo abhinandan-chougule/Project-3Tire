@@ -1,8 +1,8 @@
 # Request ACM certificate in same region as ALB
 resource "aws_acm_certificate" "alb_cert" {
-  domain_name               = var.certificate_domain
-  validation_method         = "DNS"
-  tags                      = merge(var.tags, { Name = "${var.certificate_domain}-cert" })
+  domain_name       = var.certificate_domain
+  validation_method = "DNS"
+  tags              = merge(var.tags, { Name = "${var.certificate_domain}-cert" })
 }
 
 # Create validation record

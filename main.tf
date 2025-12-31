@@ -65,7 +65,6 @@ module "app_asg" {
   private_subnet_ids    = module.vpc.private_app_subnet_ids
   app_ami_id            = var.app_ami_id
   instance_type         = var.app_instance_type
-  ec2_key_name          = var.ec2_key_name
   target_group_arn      = try(module.application_alb.target_group_arn, null)
   artifact_bucket_name  = module.s3_artifacts.bucket_name
   artifact_object_key   = var.artifact_object_key
@@ -81,6 +80,7 @@ module "app_asg" {
   db_username           = var.db_username
   db_password           = var.db_password
   tags                  = local.tags
+  aws_cli_version       = var.aws_cli_version
 }
 
 module "bastion" {
@@ -88,7 +88,6 @@ module "bastion" {
   project_name     = var.project_name
   vpc_id           = module.vpc.vpc_id
   public_subnet_id = module.vpc.public_subnet_ids[0]
-  ec2_key_name     = var.ec2_key_name
   admin_cidr       = var.admin_cidr
   tags             = local.tags
 }

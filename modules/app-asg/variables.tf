@@ -3,7 +3,6 @@ variable "vpc_id" {}
 variable "private_subnet_ids" { type = list(string) }
 variable "app_ami_id" {}
 variable "instance_type" {}
-variable "ec2_key_name" {}
 variable "target_group_arn" {}
 variable "artifact_bucket_name" {}
 variable "artifact_object_key" {}
@@ -22,3 +21,10 @@ variable "db_password" {
   sensitive = true
 }
 variable "tags" { type = map(string) }
+
+# AWS CLI version used when installing AWS CLI v2 in instance user-data
+variable "aws_cli_version" {
+  type        = string
+  default     = "2.30.6"
+  description = "Version string for AWS CLI v2 installer (e.g. 2.30.6)"
+}

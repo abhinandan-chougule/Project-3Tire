@@ -6,7 +6,7 @@ resource "aws_vpc" "this" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
-  tags = merge(var.tags, { Name = "${var.project_name}-vpc" })
+  tags                 = merge(var.tags, { Name = "${var.project_name}-vpc" })
 }
 
 resource "aws_internet_gateway" "igw" {
@@ -16,12 +16,12 @@ resource "aws_internet_gateway" "igw" {
 
 # Public subnets
 resource "aws_subnet" "public" {
-  for_each                    = toset(var.public_subnet_cidrs)
-  vpc_id                      = aws_vpc.this.id
-  cidr_block                  = each.value
-  map_public_ip_on_launch     = true
-  availability_zone           = data.aws_availability_zones.available.names[index(var.public_subnet_cidrs, each.value) % length(data.aws_availability_zones.available.names)]
-  tags = merge(var.tags, { Name = "${var.project_name}-public-${replace(each.value, "/", "-")}", Tier = "public" })
+  for_each                = toset(var.public_subnet_cidrs)
+  vpc_id                  = aws_vpc.this.id
+  cidr_block              = each.value
+  map_public_ip_on_launch = true
+  availability_zone       = data.aws_availability_zones.available.names[index(var.public_subnet_cidrs, each.value) % length(data.aws_availability_zones.available.names)]
+  tags                    = merge(var.tags, { Name = "${var.project_name}-public-${replace(each.value, "/", "-")}", Tier = "public" })
 }
 
 # Private app subnets
@@ -31,7 +31,7 @@ resource "aws_subnet" "private_app" {
   cidr_block              = each.value
   map_public_ip_on_launch = false
   availability_zone       = data.aws_availability_zones.available.names[index(var.private_app_subnet_cidrs, each.value) % length(data.aws_availability_zones.available.names)]
-  tags = merge(var.tags, { Name = "${var.project_name}-private-app-${replace(each.value, "/", "-")}", Tier = "private-app" })
+  tags                    = merge(var.tags, { Name = "${var.project_name}-private-app-${replace(each.value, "/", "-")}", Tier = "private-app" })
 }
 
 # Private db subnets
@@ -41,7 +41,7 @@ resource "aws_subnet" "private_db" {
   cidr_block              = each.value
   map_public_ip_on_launch = false
   availability_zone       = data.aws_availability_zones.available.names[index(var.private_db_subnet_cidrs, each.value) % length(data.aws_availability_zones.available.names)]
-  tags = merge(var.tags, { Name = "${var.project_name}-private-db-${replace(each.value, "/", "-")}", Tier = "private-db" })
+  tags                    = merge(var.tags, { Name = "${var.project_name}-private-db-${replace(each.value, "/", "-")}", Tier = "private-db" })
 }
 
 # NAT Gateway with EIP in first public subnet

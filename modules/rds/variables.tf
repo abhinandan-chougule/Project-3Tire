@@ -87,7 +87,7 @@ variable "admin_cidr" {
 variable "tags" {
   description = "rds Tags to apply to resources"
   type        = map(string)
-  default     = {
+  default = {
     Name = "rds"
   }
 }

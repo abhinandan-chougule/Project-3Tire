@@ -2,8 +2,8 @@ variable "hosted_zone_id" {}
 variable "domain_name" {}
 variable "subdomain" {}
 variable "alb_dns_name" {
-	type    = string
-	default = null
+  type    = string
+  default = null
 }
 variable "vpc_id" {}
 variable "certificate_domain" {}
