@@ -1,40 +1,42 @@
-# Project naming
-project_name = "petclinic-prod"
+#### To make use of this file -> Rename it to prod.tfvars ####
 
-# Networking
-vpc_cidr = "10.10.0.0/16"
+# Project naming
+project_name = "petclinic-prod"     # Choose your own or keep it as it is
+
+# Networking                        
+vpc_cidr = "10.10.0.0/16"           # Choose your own or keep it as it is
 
 # Public subnets (HA across 2 AZs)
-public_subnet_cidrs = ["10.10.1.0/24", "10.10.2.0/24"]
+public_subnet_cidrs = ["10.10.1.0/24", "10.10.2.0/24"]  # Choose your own or keep it as it is
 
 # Private app subnets (for EC2/app tier)
-private_app_subnet_cidrs = ["10.10.11.0/24", "10.10.12.0/24"]
+private_app_subnet_cidrs = ["10.10.11.0/24", "10.10.12.0/24"]          # Choose your own or keep it as it is
 db_port                  = 3306
-allowed_cidr_blocks      = ["10.10.11.0/24", "10.10.12.0/24"] # private app subnets
+allowed_cidr_blocks      = ["10.10.11.0/24", "10.10.12.0/24"]          # Choose your own or keep it as it is
 
 
 # Private DB subnets (you can carve separate ranges if needed)
 private_db_subnet_cidrs = ["10.10.21.0/24", "10.10.22.0/24"]
-db_subnet_ids           = ["10.10.21.0/24", "10.10.22.0/24"] # replace with actual private DB subnets
-vpc_id                  = "vpc-09b380dbf35f92b68"            # replace with your VPC ID
+db_subnet_ids           = ["10.10.21.0/24", "10.10.22.0/24"]           # Choose your own or keep it as it is
+# vpc_id                  = "vpc-09b380dbf35f92b68"                    # No need to mention, it will create auto
 
 
 # Bastion access (replace with your office/home IP)
-admin_cidr = "10.10.1.0/24"
+admin_cidr = "10.10.1.0/24"                                            # Choose your own or keep it as it is
 
-# Domain & certificate
-domain_name            = "mytxxxxxxxx.com"     # your root domain in Route53
-hosted_zone_id         = "Z0xxxxxxxxxxxxFY7"   # replace with actual Hosted Zone ID
-alb_certificate_domain = "prod.mytxxxxxxxt.com" # subdomain for ALB SSL cert
+# RDS Database credentials
+db_password = "ProdSecurePassword123!"                                 # Choose your own or keep it as it is
+
+# Optional infra values (can be dummy for test builds)
+sns_alert_email        = "notify_me@gmail.com"
+domain_name            = "myxxxxxxxxxxxxct.com"                       # Choose your own or keep it as it is
+hosted_zone_id         = "Z10xxxxxxxxxxxxXG0"                         # Choose your own or keep it as it is
+alb_certificate_domain = "prod.myxxxxxxxxxxxxct.com"                  # adjust with domain_name if you have changed domain_name
+enable_https           = true                                         # Choose your own or keep it as it is, placeholder for production
+# Dev/Test (HTTP only)
+#enable_https          = false
 
 # EC2 & app
-app_ami_id           = "ami-0cxxxxxxxxxxxxaf5" # latest Amazon Ubuntu or hardened AMI
-artifact_bucket_name = "my-artifacts-prod"     # S3 bucket holding your JAR
-artifact_object_key  = "spring-petclinic.jar"  # path to your app artifact
-
-# Database
-db_password     = "myRDSpassword123!"      # store securely, don't commit to GitHub
-sns_alert_email = "abc@gmail.com"          # CloudWatch alarm notifications
-
-
-
+app_ami_id           = "ami-0c687e8f5c4e54af5"                        # No need to change, latest Amazon Ubuntu AMI 
+artifact_bucket_name = "mypro-artifacts-prod"                         # Choose your own or keep it as it is, AWS limits duplicate names globally 
+artifact_object_key  = "spring-petclinic.jar"                         # Make sure you have same JAR name in S3 change
