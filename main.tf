@@ -146,4 +146,5 @@ module "monitoring" {
   sns_alert_email  = var.sns_alert_email
   target_group_arn = try(module.application_alb.target_group_arn, null)
   tags             = local.tags
+  asg_instance_ids  = try(module.app_asg.asg_instance_ids, [])
 }
