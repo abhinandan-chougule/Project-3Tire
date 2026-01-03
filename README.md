@@ -357,5 +357,5 @@ This project is licensed under the MIT License. See the LICENSE file for details
 ---
 
 **Last Updated**: January 2026  
-**Maintained By**: Platform Engineering Team  
+**Maintained By**: Abhinandan Chougule  
 **Terraform Version**: >= 1.0
