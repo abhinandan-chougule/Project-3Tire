@@ -38,6 +38,7 @@ and
 
 git clone https://github.com/abhinandan-chougule/spring-boot-petclinic-code.git
 
+```bash
 ### 2. Parameters changes
 ```bash
 I- Rename prod.tfvars.template to prod.tfvars and update parameters as mentioned in file
@@ -88,7 +89,6 @@ SELECT * FROM owners LIMIT 50;
 
 ### 8. Try adding New Owner and again verify by using above commands in Databse
 
+### 9. Load test 
 
-AWS will not allow duplicate S3 bucket globally
-AWS will not allow same secrete names in secrete manager which are deleted within last 7 days
 
