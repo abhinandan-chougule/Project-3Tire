@@ -4,7 +4,7 @@ This document outlines the AWS deployment architecture for the Java Spring PetCl
 
 ## 📊 Architecture Diagram
 
-![AWS Architecture Diagram](architecture.png)
+![AWS Architecture Diagram](architecture1.png)
 
 ## 🧩 Components
 
