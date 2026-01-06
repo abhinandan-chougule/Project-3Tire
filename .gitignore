@@ -1,6 +1,7 @@
 # Local Terraform state
 terraform.tfstate
 terraform.tfstate.backup
+terraform.lock.hcl
 crash.log
 
 # Terraform plan files
